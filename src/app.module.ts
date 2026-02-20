@@ -6,6 +6,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { RatesModule } from './rates/rates.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { RatesModule } from './rates/rates.module';
     TasksModule,
     ScheduleModule.forRoot(),
     RatesModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

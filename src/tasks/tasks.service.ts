@@ -18,7 +18,7 @@ export class TasksService implements OnApplicationBootstrap {
     this.logger.log('TasksService initialized');
   }
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  @Cron(CronExpression.EVERY_DAY_AT_5PM)
   async getBCVPrice() {
     this.logger.log('Getting price');
 
@@ -30,7 +30,7 @@ export class TasksService implements OnApplicationBootstrap {
     this.logger.log(`Price: ${price}`);
   }
 
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_5_HOURS)
   async getBinancePrice() {
     this.logger.log('Getting binance price');
     const priceData = await this.scrapperService.scrapeBinance(
@@ -41,6 +41,7 @@ export class TasksService implements OnApplicationBootstrap {
     this.logger.log(`Price: ${JSON.stringify(priceData, null, 2)}`);
   }
 
+  // Helper method to save price to database (calculate trend and variation)
   private async savePrice(sourceName: string, price: number) {
     const source = await this.prisma.sources.findUnique({
       where: {
