@@ -9,4 +9,14 @@ export class RatesController {
   getSources() {
     return this.ratesService.getSources();
   }
+
+  @Get('last-bcv-price')
+  getLastBCVPrice() {
+    return this.ratesService.getLastBCVPrice();
+  }
+
+  @Get('last-binance-price')
+  getLastBinancePrice() {
+    return this.ratesService.getLastBinancePrice();
+  }
 }
