@@ -19,4 +19,9 @@ export class RatesController {
   getLastBinancePrice() {
     return this.ratesService.getLastBinancePrice();
   }
+
+  @Get('latest-prices')
+  getLatestPrices() {
+    return this.ratesService.getLatestPrices();
+  }
 }
