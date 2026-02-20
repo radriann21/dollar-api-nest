@@ -48,4 +48,20 @@ export class RatesService {
       );
     }
   }
+
+  async getLatestPrices() {
+    try {
+      const [bcvPrice, binancePrice] = await Promise.all([
+        this.getLastBCVPrice(),
+        this.getLastBinancePrice(),
+      ]);
+      return {
+        bcv: bcvPrice,
+        binance: binancePrice,
+      };
+    } catch (error) {
+      this.logger.error('Error getting latest prices', error);
+      throw new InternalServerErrorException('Error getting latest prices');
+    }
+  }
 }
