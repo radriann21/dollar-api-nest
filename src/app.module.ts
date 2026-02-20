@@ -5,6 +5,7 @@ import { ScrapperModule } from './scrapper/scrapper.module';
 import { TasksModule } from './tasks/tasks.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
+import { RatesModule } from './rates/rates.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { ConfigModule } from '@nestjs/config';
     ScrapperModule,
     TasksModule,
     ScheduleModule.forRoot(),
+    RatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
