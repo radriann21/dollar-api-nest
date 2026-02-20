@@ -13,6 +13,12 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Trend {
+  UP
+  DOWN
+  STABLE
+}
+
 model ExchangeRate {
   id Int @id @default(autoincrement())
   price Decimal @db.Decimal(18, 4)
@@ -20,7 +26,7 @@ model ExchangeRate {
   sourceId Int
   source Sources @relation(fields: [sourceId], references: [id], onDelete: Cascade)
   
-  trend String // 'UP' | 'DOWN' | 'STABLE'
+  trend Trend
   variation Float 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -28,7 +34,7 @@ model ExchangeRate {
 
 model Sources {
   id Int @id @default(autoincrement())
-  name String // 'BCV' | 'BINANCE'
+  name String @unique
   isActive Boolean @default(true)
 
   exchangeRates ExchangeRate[]
