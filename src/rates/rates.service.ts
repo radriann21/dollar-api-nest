@@ -2,66 +2,63 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  Inject,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 
 @Injectable()
 export class RatesService {
   private readonly logger = new Logger(RatesService.name);
+  private readonly DEFAULT_TTL = 3600000; // 1 hora en ms
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) {}
+
+  // Método privado para evitar repetir lógica de caché
+  private async getOrSetPrice(sourceName: string) {
+    const cacheKey = `latestPrice:${sourceName.toUpperCase()}`;
+
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const lastPrice = await this.prisma.exchangeRate.findFirst({
+        where: { source: { name: sourceName } },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (lastPrice) {
+        await this.cacheManager.set(cacheKey, lastPrice, this.DEFAULT_TTL);
+      }
+      return lastPrice;
+    } catch (error) {
+      this.logger.error(`Error getting last ${sourceName} price`, error);
+      throw new InternalServerErrorException(`Error database: ${sourceName}`);
+    }
+  }
 
   async getSources() {
     return await this.prisma.sources.findMany();
   }
 
   async getLastBCVPrice() {
-    try {
-      const lastPrice = await this.prisma.exchangeRate.findFirst({
-        where: {
-          source: {
-            name: 'BCV',
-          },
-        },
-      });
-      return lastPrice;
-    } catch (error) {
-      this.logger.error('Error getting last BCV price', error);
-      throw new InternalServerErrorException('Error getting last BCV price');
-    }
+    return this.getOrSetPrice('BCV');
   }
 
   async getLastBinancePrice() {
-    try {
-      const lastPrice = await this.prisma.exchangeRate.findFirst({
-        where: {
-          source: {
-            name: 'BINANCE',
-          },
-        },
-      });
-      return lastPrice;
-    } catch (error) {
-      this.logger.error('Error getting last Binance price', error);
-      throw new InternalServerErrorException(
-        'Error getting last Binance price',
-      );
-    }
+    return this.getOrSetPrice('BINANCE');
   }
 
   async getLatestPrices() {
-    try {
-      const [bcvPrice, binancePrice] = await Promise.all([
-        this.getLastBCVPrice(),
-        this.getLastBinancePrice(),
-      ]);
-      return {
-        bcv: bcvPrice,
-        binance: binancePrice,
-      };
-    } catch (error) {
-      this.logger.error('Error getting latest prices', error);
-      throw new InternalServerErrorException('Error getting latest prices');
-    }
+    const [bcv, binance] = await Promise.all([
+      this.getLastBCVPrice(),
+      this.getLastBinancePrice(),
+    ]);
+
+    return { bcv, binance };
   }
 }
