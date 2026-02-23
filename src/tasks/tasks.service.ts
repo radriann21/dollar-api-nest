@@ -1,9 +1,11 @@
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ScrapperService } from '../scrapper/scrapper.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 
 @Injectable()
 export class TasksService implements OnApplicationBootstrap {
@@ -13,6 +15,7 @@ export class TasksService implements OnApplicationBootstrap {
     private readonly configService: ConfigService,
     private readonly scrapperService: ScrapperService,
     private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
   onApplicationBootstrap() {
     this.logger.log('TasksService initialized');
@@ -27,6 +30,7 @@ export class TasksService implements OnApplicationBootstrap {
     );
 
     await this.savePrice('BCV', price);
+    await this.cacheManager.del('latestPrice:BCV');
     this.logger.log(`Price: ${price}`);
   }
 
@@ -37,7 +41,7 @@ export class TasksService implements OnApplicationBootstrap {
       this.configService.get<string>('API_URL')!,
     );
     await this.savePrice('BINANCE', priceData.currentPrice);
-
+    await this.cacheManager.del('latestPrice:BINANCE');
     this.logger.log(`Price: ${JSON.stringify(priceData, null, 2)}`);
   }
 
