@@ -15,7 +15,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     ConfigModule.forRoot({ isGlobal: true }),
     CacheModule.registerAsync({
       useFactory: () => ({
-        stores: [createKeyv('redis://localhost:6379')],
+        stores: [createKeyv(process.env.REDIS_URL)],
         ttl: 60 * 60 * 1000,
       }),
       isGlobal: true,
