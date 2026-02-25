@@ -51,6 +51,7 @@ export class ScrapperService {
     }
   }
 
+  // TODO: MEJORAR CALCULO DE PROMEDIO
   async scrapeBinance(url: string): Promise<BinancePriceData> {
     try {
       const response = await this.axiosClient.post<BinanceP2PResponse>(url, {
