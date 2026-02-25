@@ -18,9 +18,7 @@ export class AnalyticsController {
   @ApiOperation({
     summary: 'Obtener brecha cambiaria actual',
     description:
-      'Calcula y retorna la brecha porcentual entre el precio del dólar en Binance y el BCV. ' +
-      'La brecha se calcula como: ((Binance - BCV) / BCV) * 100. ' +
-      'Los datos se cachean por 1 hora para optimizar el rendimiento.',
+      'Calcula y retorna la brecha porcentual entre el precio del dólar en Binance y el BCV. ',
   })
   @ApiOkResponse({
     description: 'Brecha cambiaria calculada exitosamente',

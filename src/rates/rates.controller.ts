@@ -39,7 +39,7 @@ export class RatesController {
   @ApiOperation({
     summary: 'Obtener último precio del BCV',
     description:
-      'Retorna la tasa de cambio más reciente del Banco Central de Venezuela. Los datos se cachean por 1 hora.',
+      'Retorna la tasa de cambio más reciente del Banco Central de Venezuela.',
   })
   @ApiOkResponse({
     description: 'Último precio del BCV obtenido exitosamente',
@@ -60,8 +60,7 @@ export class RatesController {
   @Get('last-binance-price')
   @ApiOperation({
     summary: 'Obtener último precio de Binance',
-    description:
-      'Retorna la tasa de cambio más reciente de Binance. Los datos se cachean por 1 hora.',
+    description: 'Retorna la tasa de cambio más reciente de Binance.',
   })
   @ApiOkResponse({
     description: 'Último precio de Binance obtenido exitosamente',
@@ -83,7 +82,7 @@ export class RatesController {
   @ApiOperation({
     summary: 'Obtener últimos precios de todas las fuentes',
     description:
-      'Retorna las tasas de cambio más recientes de BCV y Binance en una sola petición. Los datos se cachean por 1 hora.',
+      'Retorna las tasas de cambio más recientes de BCV y Binance en una sola petición.',
   })
   @ApiOkResponse({
     description: 'Últimos precios obtenidos exitosamente',
