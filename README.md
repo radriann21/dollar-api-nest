@@ -1,98 +1,275 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 💵 Dollar API - NestJS
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API REST para consultar tasas de cambio del dólar en Venezuela. Proporciona datos actualizados de múltiples fuentes como BCV (Banco Central de Venezuela) y Binance P2P, con análisis de brechas cambiarias y tendencias.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 📋 Descripción
 
-## Description
+Sistema automatizado de recolección y consulta de tasas de cambio del dólar en Venezuela. La API obtiene datos de forma programada mediante web scraping y los almacena en una base de datos PostgreSQL, ofreciendo endpoints optimizados con caché Redis para consultas rápidas.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### Características principales
 
-## Project setup
+- ✅ **Recolección automática de datos** mediante tareas programadas (Cron)
+- ✅ **Múltiples fuentes**: BCV y Binance P2P
+- ✅ **Caché con Redis** para optimizar rendimiento (TTL: 1 hora)
+- ✅ **Rate limiting** para proteger la API (60 req/min)
+- ✅ **Análisis de tendencias** (UP, DOWN, STABLE) y variaciones
+- ✅ **Cálculo de brecha cambiaria** entre fuentes
+- ✅ **Documentación interactiva** con Swagger/Scalar
+- ✅ **CORS habilitado** para peticiones GET
 
-```bash
-$ pnpm install
+## 🏗️ Arquitectura del Sistema
+
+### Stack Tecnológico
+
+- **Framework**: NestJS 11
+- **Base de datos**: PostgreSQL con Prisma ORM
+- **Caché**: Redis (via Keyv)
+- **Web Scraping**: Cheerio + Axios
+- **Documentación**: Swagger + Scalar API Reference
+- **Validación**: class-validator + class-transformer
+- **Tareas programadas**: @nestjs/schedule
+
+### Estructura de Módulos
+
+```
+src/
+├── app.module.ts          # Módulo principal con configuración global
+├── main.ts                # Bootstrap de la aplicación
+├── prisma/                # Servicio de conexión a base de datos
+├── scrapper/              # Servicio de web scraping
+├── tasks/                 # Tareas programadas (Cron jobs)
+├── rates/                 # Endpoints de consulta de tasas
+└── analytics/             # Endpoints de análisis cambiario
 ```
 
-## Compile and run the project
+## 🗄️ Modelo de Datos
 
-```bash
-# development
-$ pnpm run start
+### Tablas Principales
 
-# watch mode
-$ pnpm run start:dev
+**Sources** - Fuentes de datos
 
-# production mode
-$ pnpm run start:prod
+```prisma
+model Sources {
+  id            Int             @id @default(autoincrement())
+  name          String          @unique
+  isActive      Boolean         @default(true)
+  exchangeRates ExchangeRate[]
+}
 ```
 
-## Run tests
+**ExchangeRate** - Tasas de cambio históricas
 
-```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+```prisma
+model ExchangeRate {
+  id         Int      @id @default(autoincrement())
+  price      Decimal  @db.Decimal(18, 4)
+  sourceId   Int
+  source     Sources  @relation(fields: [sourceId], references: [id])
+  trend      Trend    // UP | DOWN | STABLE
+  variation  Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+}
 ```
 
-## Deployment
+## 🔄 Tareas Automatizadas
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### Scraping y rastreo de las tasas de cambio
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Cálculo de Tendencias
 
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+Cada vez que se guarda un precio nuevo:
+
+1. Se compara con el precio anterior de la misma fuente
+2. Se calcula la variación absoluta
+3. Se determina la tendencia (UP/DOWN/STABLE)
+
+## 🚀 API Endpoints
+
+### Rates Module (`/rates`)
+
+#### `GET /rates/sources`
+
+Obtiene todas las fuentes de datos disponibles.
+
+**Respuesta:**
+
+```json
+[
+  {
+    "id": 1,
+    "name": "BCV",
+    "isActive": true
+  },
+  {
+    "id": 2,
+    "name": "BINANCE",
+    "isActive": true
+  }
+]
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+#### `GET /rates/last-bcv-price`
 
-## Resources
+Obtiene la tasa de cambio más reciente del BCV.
 
-Check out a few resources that may come in handy when working with NestJS:
+**Respuesta:**
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```json
+{
+  "id": 123,
+  "price": "52.4500",
+  "sourceId": 1,
+  "trend": "UP",
+  "variation": 0.25,
+  "createdAt": "2026-02-24T22:00:00.000Z",
+  "updatedAt": "2026-02-24T22:00:00.000Z"
+}
+```
 
-## Support
+#### `GET /rates/last-binance-price`
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Obtiene la tasa de cambio más reciente de Binance P2P.
 
-## Stay in touch
+#### `GET /rates/latest-prices`
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Obtiene las tasas más recientes de todas las fuentes en una sola petición.
 
-## License
+**Respuesta:**
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+```json
+{
+  "bcv": {
+    /* ExchangeRate */
+  },
+  "binance": {
+    /* ExchangeRate */
+  }
+}
+```
+
+### Analytics Module (`/analytics`)
+
+#### `GET /analytics/gap`
+
+Calcula la brecha cambiaria entre Binance y BCV.
+
+**Respuesta:**
+
+```json
+{
+  "gap": "15.32%",
+  "latestBCVPrice": {
+    /* ExchangeRate */
+  },
+  "latestBinancePrice": {
+    /* ExchangeRate */
+  }
+}
+```
+
+**Fórmula:**
+
+```
+gap = ((Binance - BCV) / BCV) × 100
+```
+
+## ⚙️ Configuración
+
+### Variables de Entorno
+
+Crear archivo `.env` basado en `.env.example`:
+
+```env
+DATABASE_URL="postgresql://usuario:password@localhost:5432/dollar_api"
+REDIS_URL="redis://localhost:6379"
+WEBSITE_URL="website-url"
+API_URL="api-url"
+PORT=3000
+```
+
+### Instalación
+
+```bash
+# Instalar dependencias
+pnpm install
+
+# Generar cliente de Prisma
+pnpm prisma:generate
+
+# Ejecutar migraciones
+pnpm prisma migrate deploy
+
+# Ejecutar seeds (opcional)
+pnpm prisma db seed
+```
+
+## 🚀 Ejecución
+
+```bash
+# Desarrollo
+pnpm run start:dev
+
+# Producción
+pnpm run build
+pnpm run start:prod
+```
+
+La API estará disponible en `http://localhost:3000`
+
+## 📚 Documentación Interactiva
+
+Accede a la documentación Swagger/Scalar en:
+
+```
+http://localhost:3000/api
+```
+
+## 🔒 Seguridad y Rendimiento
+
+### Rate Limiting
+
+- **Límite**: 60 peticiones por minuto por IP
+- **Storage**: Redis para sincronización entre instancias
+- **Aplicado globalmente** mediante `ThrottlerGuard`
+
+### Caché
+
+- **TTL**: 1 hora (3600000 ms)
+- **Storage**: Redis con Keyv
+- **Estrategia**: Cache-aside pattern
+- **Invalidación**: Automática al actualizar datos
+
+### CORS
+
+- **Origen**: `*` (todas las fuentes)
+- **Métodos permitidos**: `GET` únicamente
+
+## 🛠️ Tecnologías de Web Scraping
+
+### BCV Scraper
+
+- **Librería**: Cheerio (jQuery-like para Node.js)
+- **Método**: HTTP GET con User-Agent personalizado
+- **Parsing**: Selección de elementos DOM
+- **Timeout**: 10 segundos
+
+### Binance P2P API
+
+- **Método**: HTTP POST a API pública
+- **Payload**: Filtros por moneda (USDT/VES) y método de pago
+- **Procesamiento**: Cálculo de estadísticas sobre ofertas P2P
+- **Datos extraídos**: 10 mejores ofertas
+
+## 📊 Próximas Funcionalidades
+
+- [ ] Dólar promedio ponderado
+- [ ] Más fuentes de datos (DolarToday, Monitor Dólar, etc.)
+
+## 📝 Licencia
+
+AGPL-3.0
+
+## 👨‍💻 Autor
+
+Desarrollado por [radriann21](https://github.com/radriann21) & [Raynier95](https://github.com/Raynier95)
