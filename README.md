@@ -9,13 +9,11 @@ Sistema automatizado de recolección y consulta de tasas de cambio del dólar en
 ### Características principales
 
 - ✅ **Recolección automática de datos** mediante tareas programadas (Cron)
-- ✅ **Múltiples fuentes**: BCV y Binance P2P
-- ✅ **Caché con Redis** para optimizar rendimiento (TTL: 1 hora)
+- ✅ **Múltiples fuentes**: BCV y Binance P2P (pronto más)
 - ✅ **Rate limiting** para proteger la API (60 req/min)
 - ✅ **Análisis de tendencias** (UP, DOWN, STABLE) y variaciones
 - ✅ **Cálculo de brecha cambiaria** entre fuentes
 - ✅ **Documentación interactiva** con Swagger/Scalar
-- ✅ **CORS habilitado** para peticiones GET
 
 ## 🏗️ Arquitectura del Sistema
 
@@ -40,36 +38,6 @@ src/
 ├── tasks/                 # Tareas programadas (Cron jobs)
 ├── rates/                 # Endpoints de consulta de tasas
 └── analytics/             # Endpoints de análisis cambiario
-```
-
-## 🗄️ Modelo de Datos
-
-### Tablas Principales
-
-**Sources** - Fuentes de datos
-
-```prisma
-model Sources {
-  id            Int             @id @default(autoincrement())
-  name          String          @unique
-  isActive      Boolean         @default(true)
-  exchangeRates ExchangeRate[]
-}
-```
-
-**ExchangeRate** - Tasas de cambio históricas
-
-```prisma
-model ExchangeRate {
-  id         Int      @id @default(autoincrement())
-  price      Decimal  @db.Decimal(18, 4)
-  sourceId   Int
-  source     Sources  @relation(fields: [sourceId], references: [id])
-  trend      Trend    // UP | DOWN | STABLE
-  variation  Float
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
-}
 ```
 
 ## 🔄 Tareas Automatizadas
@@ -148,7 +116,7 @@ Obtiene las tasas más recientes de todas las fuentes en una sola petición.
 }
 ```
 
-### Analytics Module (`/analytics`)
+### Analytics (`/analytics`)
 
 #### `GET /analytics/gap`
 
@@ -166,12 +134,6 @@ Calcula la brecha cambiaria entre Binance y BCV.
     /* ExchangeRate */
   }
 }
-```
-
-**Fórmula:**
-
-```
-gap = ((Binance - BCV) / BCV) × 100
 ```
 
 ## ⚙️ Configuración
@@ -240,10 +202,6 @@ http://localhost:3000/api
 - **Estrategia**: Cache-aside pattern
 - **Invalidación**: Automática al actualizar datos
 
-### CORS
-
-- **Origen**: `*` (todas las fuentes)
-- **Métodos permitidos**: `GET` únicamente
 
 ## 🛠️ Tecnologías de Web Scraping
 
