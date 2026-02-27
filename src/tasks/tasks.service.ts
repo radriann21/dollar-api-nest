@@ -29,7 +29,7 @@ export class TasksService implements OnApplicationBootstrap {
       this.configService.get<string>('WEBSITE_URL')!,
     );
 
-    await this.savePrice('BCV', price);
+    await this.savePrice('BCV', Number(price));
     await this.cacheManager.del('latestPrice:BCV');
     this.logger.log(`Price: ${price}`);
   }

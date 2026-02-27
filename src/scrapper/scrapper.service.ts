@@ -44,7 +44,7 @@ export class ScrapperService {
         throw new InternalServerErrorException('Failed to get data');
       }
 
-      return cleanPrice;
+      return cleanPrice.toFixed(2);
     } catch (error) {
       this.logger.error('Failed to get data', error);
       throw new InternalServerErrorException('Failed to get data');
