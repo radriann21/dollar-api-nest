@@ -44,14 +44,13 @@ export class ScrapperService {
         throw new InternalServerErrorException('Failed to get data');
       }
 
-      return cleanPrice;
+      return cleanPrice.toFixed(2);
     } catch (error) {
       this.logger.error('Failed to get data', error);
       throw new InternalServerErrorException('Failed to get data');
     }
   }
 
-  // TODO: MEJORAR CALCULO DE PROMEDIO
   async scrapeBinance(url: string): Promise<BinancePriceData> {
     try {
       const response = await this.axiosClient.post<BinanceP2PResponse>(url, {
@@ -59,54 +58,65 @@ export class ScrapperService {
         fiat: 'VES',
         merchantCheck: true,
         page: 1,
-        rows: 10,
+        rows: 15,
         payTypes: ['PagoMovil'],
-        publisherType: null,
+        publisherType: 'merchant',
         tradeType: 'BUY',
       });
 
-      const { data: responseData } = response;
+      const data = response.data.data;
 
-      if (
-        !responseData ||
-        !responseData.data ||
-        !Array.isArray(responseData.data) ||
-        responseData.data.length === 0
-      ) {
+      if (!data || data.length === 0) {
         throw new NotFoundException('Binance P2P data not found');
       }
 
-      const offers = responseData.data.map((offer) => ({
-        price: parseFloat(offer.adv.price),
-        available: parseFloat(offer.adv.surplusAmount),
-        seller: offer.advertiser.nickName,
-      }));
+      let totalVolume = 0;
+      let weightedSum = 0;
+      const priceList: number[] = [];
 
-      const prices = offers.map((offer) => offer.price);
-      const currentPrice = prices[0];
-      const averagePrice = prices.reduce((a, b) => a + b, 0) / prices.length;
-      const highestPrice = Math.max(...prices);
-      const lowestPrice = Math.min(...prices);
+      const offers = data.map((item) => {
+        const price = parseFloat(item.adv.price);
+        const amount = parseFloat(item.adv.surplusAmount);
 
-      const priceChange = currentPrice - lowestPrice;
-      const priceChangePercent = parseFloat(
-        ((priceChange / lowestPrice) * 100).toFixed(2),
-      );
+        priceList.push(price);
+
+        weightedSum += price * amount;
+        totalVolume += amount;
+
+        return {
+          price,
+          available: amount,
+          seller: item.advertiser.nickName,
+        };
+      });
+
+      // CÁLCULOS MEJORADOS
+      const currentPrice = priceList[0];
+      const simpleAverage =
+        priceList.reduce((a, b) => a + b, 0) / priceList.length;
+      const weightedAverage = weightedSum / totalVolume;
+
+      const highestPrice = Math.max(...priceList);
+      const lowestPrice = Math.min(...priceList);
+
+      // Variación respecto al promedio (más estable que respecto al mínimo)
+      const priceChange = currentPrice - simpleAverage;
+      const priceChangePercent = (priceChange / simpleAverage) * 100;
 
       return {
-        currentPrice,
-        averagePrice: parseFloat(averagePrice.toFixed(2)),
-        highestPrice,
-        lowestPrice,
-        priceChange: parseFloat(priceChange.toFixed(2)),
-        priceChangePercent,
-        totalOffers: responseData.total,
+        currentPrice: Number(currentPrice.toFixed(4)),
+        averagePrice: Number(weightedAverage.toFixed(4)),
+        highestPrice: Number(highestPrice.toFixed(4)),
+        lowestPrice: Number(lowestPrice.toFixed(4)),
+        priceChange: Number(priceChange.toFixed(4)),
+        priceChangePercent: Number(priceChangePercent.toFixed(2)),
+        totalOffers: response.data.total,
         timestamp: new Date().toISOString(),
         offers,
       };
     } catch (error) {
       this.logger.error('Failed to get Binance P2P data', error);
-      throw new InternalServerErrorException('Failed to get Binance P2P data');
+      throw new InternalServerErrorException('Error en el cálculo de Binance');
     }
   }
 }

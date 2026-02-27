@@ -13,11 +13,11 @@ import {
   ExchangeRateResponseDto,
   LatestPricesResponseDto,
 } from './dto';
+import { DEFAULT_TTL } from 'src/utils/constants';
 
 @Injectable()
 export class RatesService {
   private readonly logger = new Logger(RatesService.name);
-  private readonly DEFAULT_TTL = 3600000;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -47,7 +47,7 @@ export class RatesService {
         const dto = plainToInstance(ExchangeRateResponseDto, plainObject, {
           excludeExtraneousValues: true,
         });
-        await this.cacheManager.set(cacheKey, dto, this.DEFAULT_TTL);
+        await this.cacheManager.set(cacheKey, dto, DEFAULT_TTL);
         return dto;
       }
       return null;

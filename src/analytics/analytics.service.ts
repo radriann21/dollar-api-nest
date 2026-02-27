@@ -1,15 +1,14 @@
 import { BadRequestException, Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import type { Cache } from 'cache-manager';
 import { plainToInstance } from 'class-transformer';
 import { GapResponseDto } from './dto';
 import { ExchangeRateResponseDto } from 'src/rates/dto';
+import { DEFAULT_TTL } from 'src/utils/constants';
+import type { Cache } from 'cache-manager';
 
 @Injectable()
 export class AnalyticsService {
-  private readonly DEFAULT_TTL = 3600000;
-
   constructor(
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
@@ -58,19 +57,25 @@ export class AnalyticsService {
         gap: `${gap.toFixed(2)}%`,
         latestBCVPrice: plainToInstance(
           ExchangeRateResponseDto,
-          latestBCVPrice,
+          {
+            ...latestBCVPrice,
+            price: String(latestBCVPrice.price),
+          },
           { excludeExtraneousValues: true },
         ),
         latestBinancePrice: plainToInstance(
           ExchangeRateResponseDto,
-          latestBinancePrice,
+          {
+            ...latestBinancePrice,
+            price: String(latestBinancePrice.price),
+          },
           { excludeExtraneousValues: true },
         ),
       },
       { excludeExtraneousValues: true },
     );
 
-    await this.cacheManager.set(cacheKey, fullGapData, this.DEFAULT_TTL);
+    await this.cacheManager.set(cacheKey, fullGapData, DEFAULT_TTL);
 
     return fullGapData;
   }
