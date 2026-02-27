@@ -40,7 +40,11 @@ export class RatesService {
       });
 
       if (lastPrice) {
-        const dto = plainToInstance(ExchangeRateResponseDto, lastPrice, {
+        const plainObject = {
+          ...lastPrice,
+          price: lastPrice.price.toString(),
+        };
+        const dto = plainToInstance(ExchangeRateResponseDto, plainObject, {
           excludeExtraneousValues: true,
         });
         await this.cacheManager.set(cacheKey, dto, this.DEFAULT_TTL);
