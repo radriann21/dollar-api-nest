@@ -15,12 +15,7 @@ export class ExchangeRateResponseDto {
     type: 'string',
   })
   @Expose()
-  @Transform(({ value }) => {
-    if (typeof value === 'object' && value !== null && 'toString' in value) {
-      return String(value);
-    }
-    return String(value);
-  })
+  @Transform(({ value }) => (value == null ? undefined : String(value)))
   price: string;
 
   @ApiProperty({
