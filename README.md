@@ -230,4 +230,4 @@ AGPL-3.0
 
 ## 👨‍💻 Autor
 
-Desarrollado por [radriann21](https://github.com/radriann21) & [Raynier95](https://github.com/Raynier95)
+Desarrollado por [radriann21](https://github.com/radriann21)
