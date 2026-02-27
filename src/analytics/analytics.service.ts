@@ -2,13 +2,9 @@ import { BadRequestException, Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
-import type { GapResponse } from './interfaces/analytics.interfaces';
-
-/* 
-TODO: IMPLEMENTAR DOLAR PROMEDIO PONDERADO, PROBABLEMENTE SE TENGA QUE MANEJAR UN NUEVO CAMPO EN LA BD, TABLA SOURCES
-
-LEER E INVESTIGAR SOBRE MIGRACIONES EN PRISMA PARA REALIZAR EL CAMBIO CORRECTAMENTE
-*/
+import { plainToInstance } from 'class-transformer';
+import { GapResponseDto } from './dto';
+import { ExchangeRateResponseDto } from 'src/rates/dto';
 
 @Injectable()
 export class AnalyticsService {
@@ -19,10 +15,10 @@ export class AnalyticsService {
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
-  async getActualGap() {
+  async getActualGap(): Promise<GapResponseDto> {
     const cacheKey = 'actual-gap';
 
-    const cached = await this.cacheManager.get<GapResponse>(cacheKey);
+    const cached = await this.cacheManager.get<GapResponseDto>(cacheKey);
     if (cached) return cached;
 
     const latestBinancePrice = await this.prisma.exchangeRate.findFirst({
@@ -56,11 +52,23 @@ export class AnalyticsService {
         Number(latestBCVPrice.price)) *
       100;
 
-    const fullGapData = {
-      gap: `${gap.toFixed(2)}%`,
-      latestBCVPrice,
-      latestBinancePrice,
-    };
+    const fullGapData = plainToInstance(
+      GapResponseDto,
+      {
+        gap: `${gap.toFixed(2)}%`,
+        latestBCVPrice: plainToInstance(
+          ExchangeRateResponseDto,
+          latestBCVPrice,
+          { excludeExtraneousValues: true },
+        ),
+        latestBinancePrice: plainToInstance(
+          ExchangeRateResponseDto,
+          latestBinancePrice,
+          { excludeExtraneousValues: true },
+        ),
+      },
+      { excludeExtraneousValues: true },
+    );
 
     await this.cacheManager.set(cacheKey, fullGapData, this.DEFAULT_TTL);
 

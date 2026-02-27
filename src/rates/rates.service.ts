@@ -7,22 +7,30 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
+import { plainToInstance } from 'class-transformer';
+import {
+  SourceResponseDto,
+  ExchangeRateResponseDto,
+  LatestPricesResponseDto,
+} from './dto';
 
 @Injectable()
 export class RatesService {
   private readonly logger = new Logger(RatesService.name);
-  private readonly DEFAULT_TTL = 3600000; // 1 hora en ms
+  private readonly DEFAULT_TTL = 3600000;
 
   constructor(
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
-  // Método privado para evitar repetir lógica de caché
-  private async getOrSetPrice(sourceName: string) {
+  private async getOrSetPrice(
+    sourceName: string,
+  ): Promise<ExchangeRateResponseDto | null> {
     const cacheKey = `latestPrice:${sourceName.toUpperCase()}`;
 
-    const cached = await this.cacheManager.get(cacheKey);
+    const cached =
+      await this.cacheManager.get<ExchangeRateResponseDto>(cacheKey);
     if (cached) return cached;
 
     try {
@@ -32,33 +40,44 @@ export class RatesService {
       });
 
       if (lastPrice) {
-        await this.cacheManager.set(cacheKey, lastPrice, this.DEFAULT_TTL);
+        const dto = plainToInstance(ExchangeRateResponseDto, lastPrice, {
+          excludeExtraneousValues: true,
+        });
+        await this.cacheManager.set(cacheKey, dto, this.DEFAULT_TTL);
+        return dto;
       }
-      return lastPrice;
+      return null;
     } catch (error) {
       this.logger.error(`Error getting last ${sourceName} price`, error);
       throw new InternalServerErrorException(`Error database: ${sourceName}`);
     }
   }
 
-  async getSources() {
-    return await this.prisma.sources.findMany();
+  async getSources(): Promise<SourceResponseDto[]> {
+    const sources = await this.prisma.sources.findMany();
+    return plainToInstance(SourceResponseDto, sources, {
+      excludeExtraneousValues: true,
+    });
   }
 
-  async getLastBCVPrice() {
+  async getLastBCVPrice(): Promise<ExchangeRateResponseDto | null> {
     return this.getOrSetPrice('BCV');
   }
 
-  async getLastBinancePrice() {
+  async getLastBinancePrice(): Promise<ExchangeRateResponseDto | null> {
     return this.getOrSetPrice('BINANCE');
   }
 
-  async getLatestPrices() {
+  async getLatestPrices(): Promise<LatestPricesResponseDto> {
     const [bcv, binance] = await Promise.all([
       this.getLastBCVPrice(),
       this.getLastBinancePrice(),
     ]);
 
-    return { bcv, binance };
+    return plainToInstance(
+      LatestPricesResponseDto,
+      { bcv, binance },
+      { excludeExtraneousValues: true },
+    );
   }
 }

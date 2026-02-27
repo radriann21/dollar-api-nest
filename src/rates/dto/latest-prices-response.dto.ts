@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Expose, Type } from 'class-transformer';
 import { ExchangeRateResponseDto } from './exchange-rate-response.dto';
 
 export class LatestPricesResponseDto {
@@ -7,6 +8,8 @@ export class LatestPricesResponseDto {
     type: ExchangeRateResponseDto,
     nullable: true,
   })
+  @Expose()
+  @Type(() => ExchangeRateResponseDto)
   bcv: ExchangeRateResponseDto | null;
 
   @ApiProperty({
@@ -14,5 +17,7 @@ export class LatestPricesResponseDto {
     type: ExchangeRateResponseDto,
     nullable: true,
   })
+  @Expose()
+  @Type(() => ExchangeRateResponseDto)
   binance: ExchangeRateResponseDto | null;
 }
