@@ -58,12 +58,18 @@ export class AnalyticsService {
         gap: `${gap.toFixed(2)}%`,
         latestBCVPrice: plainToInstance(
           ExchangeRateResponseDto,
-          latestBCVPrice,
+          {
+            ...latestBCVPrice,
+            price: String(latestBCVPrice.price),
+          },
           { excludeExtraneousValues: true },
         ),
         latestBinancePrice: plainToInstance(
           ExchangeRateResponseDto,
-          latestBinancePrice,
+          {
+            ...latestBinancePrice,
+            price: String(latestBinancePrice.price),
+          },
           { excludeExtraneousValues: true },
         ),
       },
