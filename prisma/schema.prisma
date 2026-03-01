@@ -36,6 +36,6 @@ model Sources {
   id Int @id @default(autoincrement())
   name String @unique
   isActive Boolean @default(true)
-
+  lastPrice Decimal? @db.Decimal(18, 4)
   exchangeRates ExchangeRate[]
 }
