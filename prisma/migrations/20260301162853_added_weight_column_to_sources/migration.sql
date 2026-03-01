@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Sources" ADD COLUMN     "weight" DOUBLE PRECISION NOT NULL DEFAULT 1.0;

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose, Transform } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
+import { SourceResponseDto } from './source-response.dto';
 
 export class ExchangeRateResponseDto {
   @ApiProperty({
@@ -15,15 +16,15 @@ export class ExchangeRateResponseDto {
     type: 'string',
   })
   @Expose()
-  @Transform(({ value }) => (value == null ? undefined : String(value)))
   price: string;
 
   @ApiProperty({
-    description: 'ID de la fuente de datos',
-    example: 1,
+    description: 'Objeto de la fuente de datos',
+    example: { id: 1, name: 'BCV' },
   })
   @Expose()
-  sourceId: number;
+  @Type(() => SourceResponseDto)
+  source: SourceResponseDto;
 
   @ApiProperty({
     description: 'Tendencia del precio',
