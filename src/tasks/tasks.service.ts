@@ -19,9 +19,11 @@ export class TasksService implements OnApplicationBootstrap {
   ) {}
   onApplicationBootstrap() {
     this.logger.log('TasksService initialized');
+    void this.getBCVPrice();
+    void this.getBinancePrice();
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_5PM)
+  @Cron(CronExpression.EVERY_6_HOURS)
   async getBCVPrice() {
     this.logger.log('Getting price');
 
@@ -34,7 +36,7 @@ export class TasksService implements OnApplicationBootstrap {
     this.logger.log(`Price: ${price}`);
   }
 
-  @Cron(CronExpression.EVERY_5_HOURS)
+  @Cron(CronExpression.EVERY_4_HOURS)
   async getBinancePrice() {
     this.logger.log('Getting binance price');
     const priceData = await this.scrapperService.scrapeBinance(
@@ -51,6 +53,12 @@ export class TasksService implements OnApplicationBootstrap {
       where: {
         name: sourceName,
       },
+      include: {
+        exchangeRates: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
     });
 
     if (!source) {
@@ -58,14 +66,12 @@ export class TasksService implements OnApplicationBootstrap {
       return;
     }
 
-    const lastEntry = await this.prisma.exchangeRate.findFirst({
-      where: {
-        sourceId: source.id,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const lastEntry = source.exchangeRates[0];
+
+    if (lastEntry && Number(lastEntry.price) === price) {
+      this.logger.log('No change in price');
+      return;
+    }
 
     let trend: 'UP' | 'DOWN' | 'STABLE' = 'STABLE';
     let variation = 0;
@@ -82,13 +88,24 @@ export class TasksService implements OnApplicationBootstrap {
       }
     }
 
-    return this.prisma.exchangeRate.create({
-      data: {
-        sourceId: source.id,
-        price,
-        trend,
-        variation,
-      },
+    return await this.prisma.$transaction(async (tx) => {
+      await tx.sources.update({
+        where: {
+          id: source.id,
+        },
+        data: {
+          lastPrice: price,
+        },
+      });
+
+      await tx.exchangeRate.create({
+        data: {
+          price,
+          trend,
+          variation,
+          sourceId: source.id,
+        },
+      });
     });
   }
 }
