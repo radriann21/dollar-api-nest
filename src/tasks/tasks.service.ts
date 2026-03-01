@@ -19,8 +19,8 @@ export class TasksService implements OnApplicationBootstrap {
   ) {}
   onApplicationBootstrap() {
     this.logger.log('TasksService initialized');
-    void this.getBCVPrice();
-    void this.getBinancePrice();
+    // void this.getBCVPrice();
+    // void this.getBinancePrice();
   }
 
   @Cron(CronExpression.EVERY_6_HOURS)
